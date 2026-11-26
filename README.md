@@ -1,8 +1,49 @@
-# VRAP — Vendor Risk Assessment Portal
+<p align="center">
+  <img src="assets/banner.png" alt="VRAP — Vendor Risk Assessment Portal" width="100%" />
+</p>
 
-A traceable, risk-based third-party risk management (TPRM) portal for vendor assessment and operational-resilience review. The portal supports a complete vendor lifecycle — central inventory, tailored questionnaires, evidence tracking, explainable risk scoring, regulatory coverage, continuous monitoring, human approvals, audit reporting, and role-based access control (RBAC) with per-account credentials.
+<h1 align="center">VRAP — Vendor Risk Assessment Portal</h1>
 
-> **Status:** complete and verified end-to-end — production build passes, lint is clean, and every role/page/permission path was exercised against a running instance (see [Verification & testing](#verification--testing)).
+<p align="center">
+  <strong>Traceable, risk-based third-party risk management (TPRM).</strong><br/>
+  Evidence-led vendor assessment, explainable scoring and human decisions — in one portal.
+</p>
+
+<p align="center">
+  <a href="#about">About</a> ·
+  <a href="#demo-accounts-sign-in-with-email--password">Demo accounts</a> ·
+  <a href="#getting-started">Quickstart</a> ·
+  <a href="#deploying-to-vercel">Deploy to Vercel</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
+
+<p align="center">
+  <a href="https://nextjs.org"><img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white" /></a>
+  <a href="https://react.dev"><img alt="React 19" src="https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white" /></a>
+  <a href="https://www.typescriptlang.org"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white" /></a>
+  <a href="https://orm.drizzle.team"><img alt="Drizzle ORM" src="https://img.shields.io/badge/Drizzle%20ORM-0.45-c5f74f?logo=drizzle&logoColor=black" /></a>
+  <a href="https://orm.drizzle.team/docs/connect-to-database#pglite"><img alt="PGlite" src="https://img.shields.io/badge/PGlite-WASM%20Postgres-336791?logo=postgresql&logoColor=white" /></a>
+  <a href="https://tailwindcss.com"><img alt="Tailwind CSS 4" src="https://img.shields.io/badge/Tailwind%20CSS-4.1-38bdf8?logo=tailwindcss&logoColor=white" /></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
+  <a href="https://vercel.com"><img alt="Deploy with Vercel" src="https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel&logoColor=white" /></a>
+</p>
+
+> **Status:** complete and verified end-to-end — production build passes, lint is clean, and every role × page × permission path was exercised against a running instance. See [Verification & testing](#verification--testing).
+> **Data:** demonstration prototype with fictional vendors only — no compliance determination, no supplier approval without a human decision.
+
+---
+
+## Highlights
+
+| | |
+|---|---|
+| **Explainable scoring** | Every score decomposes into named, weighted, tunable factors — never a black box. |
+| **Evidence confidence** | Expired evidence quietly lowers confidence; it never auto-fails a control. |
+| **Resilience, separate** | Continuity plan & exercise readiness reported next to cyber risk — not averaged into it. |
+| **Human decisions only** | Scores rank and inform; people approve, with rationale, in an immutable audit trail. |
+| **5-role RBAC** | Administrator · Reviewer · Approver · Vendor representative · Auditor — enforced server-side on every action. |
+| **Zero-setup database** | PGlite (WASM Postgres) boots empty databases and auto-seeds the demo dataset. |
+| **14 frameworks** | ISO 27001, NIST CSF/SP 800-161, GDPR, DPDP, DORA, NIS2, RBI/SEBI, PCI-DSS, CSA CCM… auto-mapped per vendor. |
 
 ---
 
@@ -23,7 +64,9 @@ A traceable, risk-based third-party risk management (TPRM) portal for vendor ass
 13. [Security notes](#security-notes)
 14. [Evaluation & validation](#evaluation--validation)
 15. [Limitations & out of scope](#limitations--out-of-scope)
-16. [Changelog](#changelog)
+16. [Contributing](#contributing)
+17. [License](#license)
+18. [Changelog](#changelog)
 
 ---
 
@@ -312,14 +355,14 @@ Server actions (`src/app/actions.ts`) enforce `can(role, action)` permissions an
 Everything below was run against the production build (`npm run build && npm start`):
 
 **Build & static checks**
-- `npm run build` — clean (10 routes dynamic, type-checked).
+- `npm run build` — clean (all routes dynamic, type-checked).
 - `npm run lint` — 0 errors, 0 warnings.
 - `npm run typecheck` — clean.
 
 **Authentication lifecycle (HTTP, cookie jars per persona)**
 - All 5 demo accounts sign in → 303 redirect to `/` (vendor rep → `/vendors/<own id>`).
 - Wrong password, unknown email → 303 `/login?error=invalid`; deactivated account → `/login?error=disabled`; no-password account → `/login?error=nopassword`.
-- Admin provisions a new account via `/access` → the new credentials work; deactivation blocks sign-in; admin resets the password → old password rejected, new one works; old sessions invalidated appropriately.
+- Admin provisions a new account via `/access` → the new credentials work; deactivation blocks sign-in; admin resets the password → old password rejected, new one works.
 - Garbage/forged `vrap_session` cookie → redirect to `/login`.
 
 **RBAC page-permission matrix (all roles × all routes)** — `/`, `/vendors`, `/vendors/[id]`, `/assessments`, `/assessments/[id]`, `/services`, `/actions`, `/exceptions`, `/compliance`, `/monitoring`, `/reports`, `/reports/generated`, `/access`, `/settings`, `/evaluation`, `/roadmap`, `/about` — each role sees exactly what the matrix allows; vendor rep is redirected away from other vendors' records to their own; admin-only pages refuse everyone else.
@@ -361,11 +404,19 @@ This is a demonstration prototype, not a production system. The following are in
 
 No score, report, or automated output in VRAP constitutes a compliance determination, supplier approval, or substitute for professional judgement.
 
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, the ground rules (human decisions, audit everything, server-side RBAC), the required checks (`npm run build` · `npm run lint` · `npm run typecheck`) and the code map.
+
+## License
+
+[MIT](LICENSE) © 2026 dhanraj5893. Vendor names and demo data are fictional; VRAP is provided as-is for demonstration and evaluation.
+
 ## Changelog
 
 ### v1.0 — completion & hardening (2026-11-26)
 
-- **Credential sign-in:** replaced the pick-a-persona login with manual email + password entry; scrypt-hashed credentials; forgot-nothing flow (admin resets); plaintext secrets never stored.
+- **Credential sign-in:** replaced the pick-a-persona login with manual email + password entry; scrypt-hashed credentials; admin-performed password resets; plaintext secrets never stored.
 - **Account lifecycle on `/access`:** provision with temporary password, per-user password reset, role/vendor edits, activate/deactivate — all audited.
 - **New About & help page** (`/about`) with roles, capabilities, stack, standards and disclaimer; linked from sidebar for all roles.
 - **Redesigned portfolio dashboard** — role-aware focus cards, decision inbox for approvers, personalized greeting, compliance-coverage KPI, denser KPI strip.
@@ -375,4 +426,7 @@ No score, report, or automated output in VRAP constitutes a compliance determina
 
 ---
 
-*VRAP — Vendor Risk Assessment Portal. Built for demonstration and evaluation of risk-based third-party assessment and operational-resilience review.*
+<p align="center">
+  <img src="assets/banner.png" alt="VRAP" width="320" /><br/>
+  <sub>VRAP — Vendor Risk Assessment Portal · Built for demonstration and evaluation of risk-based third-party assessment.</sub>
+</p>
