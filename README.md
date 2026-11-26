@@ -14,6 +14,7 @@
   <a href="#demo-accounts-sign-in-with-email--password">Demo accounts</a> ·
   <a href="#getting-started">Quickstart</a> ·
   <a href="#deploying-to-vercel">Deploy to Vercel</a> ·
+  <a href="https://vrap-1.vercel.app">Live demo</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
@@ -26,9 +27,11 @@
   <a href="https://tailwindcss.com"><img alt="Tailwind CSS 4" src="https://img.shields.io/badge/Tailwind%20CSS-4.1-38bdf8?logo=tailwindcss&logoColor=white" /></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
   <a href="https://vercel.com"><img alt="Deploy with Vercel" src="https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel&logoColor=white" /></a>
+  <a href="https://vrap-1.vercel.app"><img alt="Live demo" src="https://img.shields.io/badge/Live-demo-brightgreen?logo=vercel&logoColor=white" /></a>
 </p>
 
 > **Status:** complete and verified end-to-end — production build passes, lint is clean, and every role × page × permission path was exercised against a running instance. See [Verification & testing](#verification--testing).
+> **Live demo:** [https://vrap-1.vercel.app](https://vrap-1.vercel.app) — sign in with any of the [demo accounts](#demo-accounts-sign-in-with-email--password).
 > **Data:** demonstration prototype with fictional vendors only — no compliance determination, no supplier approval without a human decision.
 
 ---
@@ -303,6 +306,8 @@ VRAP deploys to [Vercel](https://vercel.com) with zero configuration. On Vercel,
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/dhanraj5893/VRAP1)
 
+**Live demo:** [https://vrap-1.vercel.app](https://vrap-1.vercel.app) — deployed from `main`. Sign in with the [demo accounts](#demo-accounts-sign-in-with-email--password) (e.g. `dhanraj.rana@demo.vrap` / `admin123`).
+
 ### Manual deploy
 
 1. Push this repository to GitHub.
@@ -316,7 +321,7 @@ VRAP deploys to [Vercel](https://vercel.com) with zero configuration. On Vercel,
 
 - Each serverless cold start creates a fresh in-memory PGlite database, auto-seeded with demo data (8 vendors, 14 standards, 5 role accounts, questionnaires, evidence, audit reports, etc.).
 - **Sessions survive cold starts.** Session tokens key the user by email (not just serial id), so signing out is not forced when the demo database is re-created.
-- To force a re-seed without redeploying, call `POST /api/seed` (e.g. `curl -X POST https://your-app.vercel.app/api/seed`).
+- To force a re-seed without redeploying, call `POST /api/seed` (e.g. `curl -X POST https://vrap-1.vercel.app/api/seed`).
 - Data does **not** persist across cold starts on Vercel (ephemeral filesystem). For persistent data, connect an external PostgreSQL via `DATABASE_URL` (e.g. Vercel Postgres, Neon, Supabase) and run `npm run db:seed` once against it.
 - `POST /api/seed` refuses to run in external-Postgres mode (it is a PGlite demo convenience only).
 
