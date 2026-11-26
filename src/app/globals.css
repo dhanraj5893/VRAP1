@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0a0e13;
+  --color-panel: #10161d;
+  --color-panel-2: #141b24;
+  --color-line: rgba(255, 255, 255, 0.07);
+  --color-accent: #2dd4bf;
+  --font-display: "Space Grotesk", var(--font-space-grotesk), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-body: "Inter", var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", var(--font-jetbrains), ui-monospace, "Cascadia Code", "Fira Code", monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-ink);
+  color: #e2e8f0;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(45, 212, 191, 0.3);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #263241 transparent;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0)),
+    var(--color-panel);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+}
+
+.card-hover {
+  transition: border-color 0.25s ease, transform 0.25s ease, background 0.25s ease;
+}
+.card-hover:hover {
+  border-color: rgba(45, 212, 191, 0.25);
+  transform: translateY(-1px);
+}
+
+.input, .select, .textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  color: #e2e8f0;
+  outline: none;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.input:focus, .select:focus, .textarea:focus {
+  border-color: rgba(45, 212, 191, 0.5);
+  background: rgba(45, 212, 191, 0.04);
+}
+.input::placeholder, .textarea::placeholder {
+  color: #4b5a6a;
+}
+.select option {
+  background: #10161d;
+  color: #e2e8f0;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 9px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.5rem 0.9rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.btn-primary {
+  background: var(--color-accent);
+  color: #062622;
+  font-weight: 600;
+}
+.btn-primary:hover {
+  background: #5eead4;
+}
+.btn-ghost {
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.02);
+}
+.btn-ghost:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+}
+.btn-danger {
+  border-color: rgba(251, 113, 133, 0.3);
+  color: #fda4af;
+  background: rgba(251, 113, 133, 0.08);
+}
+.btn-danger:hover {
+  background: rgba(251, 113, 133, 0.15);
+}
+
+.table-row {
+  transition: background 0.15s ease;
+}
+.table-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+@media print {
+  body {
+    background: #fff;
+    color: #111;
+    font-size: 11pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    box-shadow: none;
+  }
+  /* Ensure page breaks work cleanly */
+  .report-section {
+    break-inside: avoid;
+  }
+  /* Reset dark bg for print */
+  [class*="bg-white/"] {
+    background: #f9fafb !important;
+  }
+  [class*="border-white/"] {
+    border-color: #e5e7eb !important;
+  }
+  /* Typography */
+  .text-zinc-100, .text-zinc-200, .text-zinc-300 { color: #111 !important; }
+  .text-zinc-400, .text-zinc-500, .text-zinc-600 { color: #555 !important; }
+  /* Links */
+  a { color: inherit !important; text-decoration: none !important; }
+  /* Page margins */
+  @page {
+    margin: 1.5cm;
+    size: A4;
+  }
+}
