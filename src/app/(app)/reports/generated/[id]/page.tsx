@@ -5,6 +5,7 @@ import { PrintButton } from "@/components/client-bits";
 import { Card, SectionTitle, Pill } from "@/components/ui";
 import { TIER_META, RESILIENCE_META } from "@/lib/scoring";
 import { fmtDate } from "@/lib/utils";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -40,9 +41,9 @@ export default async function GeneratedReportPage({ params }: { params: Promise<
         </div>
         <div className="flex gap-2">
           <PrintButton />
-          <a href="/reports/generated" className="rounded-lg border border-white/8 bg-white/6 px-3 py-2 text-[11.5px] font-medium text-zinc-300 hover:bg-white/10">
+          <Link href="/reports/generated" className="rounded-lg border border-white/8 bg-white/6 px-3 py-2 text-[11.5px] font-medium text-zinc-300 hover:bg-white/10">
             Back to library
-          </a>
+          </Link>
         </div>
       </header>
 

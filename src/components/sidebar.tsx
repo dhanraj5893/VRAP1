@@ -18,24 +18,26 @@ import {
   AlertCircle,
   LogOut,
   BarChart3,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS } from "@/lib/utils";
 
 const NAV = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "reviewer", "approver", "vendor"] },
-  { href: "/vendors", label: "Vendor register", icon: Building2, roles: ["admin", "reviewer", "approver", "vendor"] },
-  { href: "/assessments", label: "Assessments", icon: ClipboardCheck, roles: ["admin", "reviewer", "approver", "vendor"] },
-  { href: "/services", label: "Business services", icon: Network, roles: ["admin", "reviewer", "approver"] },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "reviewer", "approver", "vendor", "auditor"] },
+  { href: "/vendors", label: "Vendor register", icon: Building2, roles: ["admin", "reviewer", "approver", "vendor", "auditor"] },
+  { href: "/assessments", label: "Assessments", icon: ClipboardCheck, roles: ["admin", "reviewer", "approver", "vendor", "auditor"] },
+  { href: "/services", label: "Business services", icon: Network, roles: ["admin", "reviewer", "approver", "auditor"] },
   { href: "/actions", label: "Findings & actions", icon: ListChecks, roles: ["admin", "reviewer", "approver", "vendor"] },
   { href: "/exceptions", label: "Exceptions", icon: Scale, roles: ["admin", "reviewer", "approver"] },
   { href: "/compliance", label: "Regulatory coverage", icon: BarChart3, roles: ["admin", "reviewer", "approver", "auditor"] },
-  { href: "/monitoring", label: "Incidents & triggers", icon: AlertCircle, roles: ["admin", "reviewer"] },
-  { href: "/reports", label: "Reports", icon: FileBarChart, roles: ["admin", "reviewer", "approver"] },
+  { href: "/monitoring", label: "Incidents & triggers", icon: AlertCircle, roles: ["admin", "reviewer", "auditor"] },
+  { href: "/reports", label: "Reports", icon: FileBarChart, roles: ["admin", "reviewer", "approver", "auditor"] },
   { href: "/access", label: "Access control", icon: Lock, roles: ["admin"] },
   { href: "/settings", label: "Scoring model", icon: SlidersHorizontal, roles: ["admin"] },
   { href: "/evaluation", label: "Evaluation", icon: Users, roles: ["admin", "reviewer", "approver", "vendor", "auditor"] },
-  { href: "/roadmap", label: "Project status", icon: Milestone, roles: ["admin", "reviewer", "approver", "vendor"] },
+  { href: "/roadmap", label: "Project status", icon: Milestone, roles: ["admin", "reviewer", "approver", "vendor", "auditor"] },
+  { href: "/about", label: "About & help", icon: Info, roles: ["admin", "reviewer", "approver", "vendor", "auditor"] },
 ];
 
 export function Sidebar({

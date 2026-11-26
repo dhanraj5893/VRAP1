@@ -1,45 +1,77 @@
 # VRAP — Vendor Risk Assessment Portal
 
-A traceable, risk-based third-party risk management (TPRM) prototype for vendor assessment and operational-resilience review. The portal supports a complete vendor lifecycle — central inventory, tailored questionnaires, evidence tracking, explainable risk scoring, regulatory coverage, continuous monitoring, human approvals, audit reporting, and role-based access control.
+A traceable, risk-based third-party risk management (TPRM) portal for vendor assessment and operational-resilience review. The portal supports a complete vendor lifecycle — central inventory, tailored questionnaires, evidence tracking, explainable risk scoring, regulatory coverage, continuous monitoring, human approvals, audit reporting, and role-based access control (RBAC) with per-account credentials.
+
+> **Status:** complete and verified end-to-end — production build passes, lint is clean, and every role/page/permission path was exercised against a running instance (see [Verification & testing](#verification--testing)).
 
 ---
 
 ## Table of contents
 
-1. [Overview](#overview)
+1. [About](#about)
 2. [Audience & intended use](#audience--intended-use)
-3. [Core capabilities](#core-capabilities)
-4. [Standards & regulatory coverage](#standards--regulatory-coverage)
-5. [Risk-scoring model](#risk-scoring-model)
-6. [Access control & roles](#access-control--roles)
-7. [Demo accounts](#demo-accounts)
+3. [Demo accounts (sign in with email + password)](#demo-accounts-sign-in-with-email--password)
+4. [Core capabilities](#core-capabilities)
+5. [Standards & regulatory coverage](#standards--regulatory-coverage)
+6. [Risk-scoring model](#risk-scoring-model)
+7. [Access control & RBAC](#access-control--rbac)
 8. [Getting started](#getting-started)
-9. [Suggested demo walkthrough](#suggested-demo-walkthrough)
-10. [Architecture & data model](#architecture--data-model)
-11. [Evaluation & validation](#evaluation--validation)
-12. [Limitations & out of scope](#limitations--out-of-scope)
+9. [Deploying to Vercel](#deploying-to-vercel)
+10. [Suggested demo walkthrough](#suggested-demo-walkthrough)
+11. [Architecture & data model](#architecture--data-model)
+12. [Verification & testing](#verification--testing)
+13. [Security notes](#security-notes)
+14. [Evaluation & validation](#evaluation--validation)
+15. [Limitations & out of scope](#limitations--out-of-scope)
+16. [Changelog](#changelog)
 
 ---
 
-## Overview
+## About
 
-VRAP (Vendor Risk Assessment Portal) is a web-based prototype designed to support risk-based vendor assessment and operational-resilience review. It provides a central vendor inventory with owners, services, criticality, and data/system access; tailored questionnaires with evidence status, reviewer comments, and decision history; transparent, configurable risk factors; and visibility into evidence confidence and resilience readiness.
+**VRAP exists to make third-party risk visible, traceable and human.** Instead of a spreadsheet graveyard, every vendor gets one profile — services they touch, their inherent exposure, their evidence over time, their resilience readiness, their compliance coverage against 14 frameworks — and every decision (approve / conditionally approve / hold) is made by a named human, recorded with a rationale, and written to an immutable audit trail.
 
-The prototype records findings, exceptions, actions, approvals, and reassessment triggers, and includes auditing report generation and access-control features. It is intended for demonstration and evaluation purposes using fictional vendor data.
+**Who it is for**
+
+| Persona | Role in VRAP | What they do all day |
+|---------|--------------|----------------------|
+| Administrator (Dhanraj Rana) | Full control | Provision accounts, reset passwords, configure the scoring model, oversee everything |
+| Reviewer (Raj Jadav) | Evidence & rationale | Verify evidence, raise findings/actions, send assessments for decision |
+| Approver (Chaitanya Nagre) | Human decision | Approve, conditionally approve or hold assessments; approve exceptions |
+| Vendor representative (Jenil Dalal — Nimbus) | Scoped supplier | Answer the questionnaire and register evidence — only for their own vendor record |
+| Auditor (Elena Rossi) | Read-only | Reports, compliance matrix, monitoring log and the audit trail — cannot change anything |
+
+**What makes it different**
+
+- **Explainable scoring** — every number on screen decomposes into factors you can inspect and tune (never a black box).
+- **Evidence confidence, not evidence theatre** — expired evidence quietly lowers confidence; it never auto-fails a control and never silently disappears.
+- **Resilience kept separate** — continuity plan and exercise readiness are reported next to cyber risk, not averaged into it.
+- **Human decisions only** — scores rank and inform; people decide, and the audit trail proves it.
+- **Works out of the box** — PGlite (WASM Postgres) means zero external database; `npm install && npm run dev` is the whole setup.
+
+The in-app **About & help** page (`/about`) mirrors this section for signed-in users.
+
+---
 
 ## Audience & intended use
 
-The portal supports four primary user roles plus a read-only auditor persona:
+VRAP supports five role-based personas (four operational roles plus a read-only auditor). Evaluation of the prototype is intended to be conducted through scenario-based tasks and intended-user feedback, subject to required approvals (faculty guide / institutional ethics clearance as applicable).
 
-| Role | Typical user | Responsibility |
-|------|-------------|----------------|
-| Administrator | Dhanraj Rana | Full system access: user provisioning, access control, scoring-model configuration, all reports |
-| Reviewer | Raj Jadav | Evidence verification, reviewer rationale, findings, sending assessments for decision |
-| Approver | Chaitanya Nagre | Assessment decisions (approve / conditionally approve / hold), exception approval |
-| Vendor representative | Jenil Dalal (Nimbus) | Vendor-scoped access to own assessment: responses and evidence registration only |
-| Auditor | Elena Rossi | Read-only access to reports, compliance matrix, monitoring, and audit trail |
+## Demo accounts (sign in with email + password)
 
-Evaluation of the prototype is intended to be conducted through scenario-based tasks and intended-user feedback, subject to required approvals (faculty guide / institutional ethics clearance as applicable).
+Sign in at `/login` with your **email (user ID)** and **password**. Passwords are stored as scrypt hashes — never in plain text.
+
+| Persona | Email / user ID | Password | Role | Scope |
+|---------|-----------------|----------|------|-------|
+| Dhanraj Rana | `dhanraj.rana@demo.vrap` | `admin123` | Administrator | Full system access (users, scoring model, everything) |
+| Raj Jadav | `raj.jadav@demo.vrap` | `reviewer123` | Reviewer | Evidence verification, findings, review flow |
+| Chaitanya Nagre | `chaitanya.nagre@demo.vrap` | `approver123` | Approver | Assessment decisions, exception approvals |
+| Jenil Dalal (Nimbus) | `jenil.dalal@demo.vrap` | `vendor123` | Vendor representative | Nimbus Cloud Hosting only — answers & evidence |
+| Elena Rossi | `elena.rossi@demo.vrap` | `auditor123` | Auditor | Read-only portfolio, reports, compliance, monitoring, audit trail |
+
+> These are demonstration credentials for fictional users. Change them (Access control → Reset password) before any real use, and never commit real credentials. When the demo database is re-seeded (CLI, `POST /api/seed`), these accounts are recreated with exactly these passwords.
+
+New accounts are provisioned by an administrator on the **Access control** page (`/access`): name, email, role, vendor scope (for vendor reps) and a temporary password. The administrator can reset any account's password at any time; resetting invalidates the old password immediately.
 
 ## Core capabilities
 
@@ -93,15 +125,15 @@ Record vendor incidents with severity and status, register fourth parties / sub-
 
 ### Findings, actions, exceptions & approvals
 
-Raise severity-rated findings, create time-bound remediation actions with owners, propose and approve/re retire risk exceptions with compensating controls, and record human assessment decisions with rationale and reassessment horizons.
+Raise severity-rated findings, create time-bound remediation actions with owners, propose and approve/retire risk exceptions with compensating controls, and record human assessment decisions with rationale and reassessment horizons.
 
 ### Audit reporting & audit trail
 
-Generate stored, reproducible audit reports (portfolio, vendor, compliance, audit trail, evidence, findings, access, evaluation) with a point-in-time snapshot. Every significant action is written to an immutable audit trail with actor, entity, action, detail, and timestamp.
+Generate stored, reproducible audit reports (portfolio, vendor, compliance, audit trail, evidence, findings, access, evaluation) with a point-in-time snapshot. Every significant action — including sign-ins, failed sign-ins, deactivations and password resets — is written to an immutable audit trail with actor, entity, action, detail, and timestamp.
 
 ### Access control & RBAC
 
-Role-based permissions are enforced on every server action. Vendor representatives are scoped to their own vendor record. Deactivated accounts cannot sign in. An administrator provisions users, assigns roles, and manages account state through the access-control page.
+Role-based permissions are enforced on every server action **and** every page guard. Vendor representatives are scoped to their own vendor record. Deactivated accounts cannot sign in (and existing sessions lose access immediately). An administrator provisions users, assigns roles, resets passwords and manages account state through the access-control page.
 
 ### Prototype evaluation
 
@@ -151,7 +183,7 @@ Each factor is captured on a 1–5 scale at intake and mapped to 20/40/60/80/100
 
 The administrator can adjust weights, the mitigation cap, and tier thresholds on the Scoring model page; changes apply to all assessments and are audited.
 
-## Access control & roles
+## Access control & RBAC
 
 | Permission | Admin | Reviewer | Approver | Vendor | Auditor |
 |------------|-------|----------|----------|--------|---------|
@@ -160,26 +192,22 @@ The administrator can adjust weights, the mitigation cap, and tier thresholds on
 | Verify evidence, findings, rationale | ✓ | ✓ | | | |
 | Approve / hold assessments | ✓ | | ✓ | | |
 | Approve exceptions | ✓ | | ✓ | | |
-| Manage users & access | ✓ | | | | |
+| Manage users & access (incl. password resets) | ✓ | | | | |
 | Configure scoring model | ✓ | | | | |
 | Manage questionnaires | ✓ | ✓ | | | |
 | Manage compliance records | ✓ | ✓ | | | |
-| Manage monitoring (incidents, triggers) | ✓ | ✓ | | | |
+| Manage monitoring (incidents, triggers) | ✓ | ✓ | | | view |
 | Generate audit reports | ✓ | ✓ | ✓ | | ✓ |
 | View audit trail & reports | ✓ | ✓ | ✓ | | ✓ |
 | Submit evaluation feedback | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-## Demo accounts
+**Enforcement summary**
 
-Sign in through the persona picker on the sign-in page:
-
-| Persona | Email | Role | Scope |
-|---------|-------|------|-------|
-| Dhanraj Rana | dhanraj.rana@demo.vrap | Administrator | Full system access |
-| Raj Jadav | raj.jadav@demo.vrap | Reviewer | Evidence, findings, review flow |
-| Chaitanya Nagre | chaitanya.nagre@demo.vrap | Approver | Assessment decisions, exceptions |
-| Jenil Dalal (Nimbus) | jenil.dalal@demo.vrap | Vendor representative | Nimbus Cloud Hosting only |
-| Elena Rossi | elena.rossi@demo.vrap | Auditor | Read-only portfolio access |
+- Every server action calls `can(user, action)` (or an equivalent role/ownership check) and writes an audit event.
+- Every page under `(app)` requires a session; role-specific pages redirect otherwise (e.g. `/access` and `/settings` are admin-only; `/monitoring` is admin/reviewer/auditor-view).
+- Vendor representatives are double-scoped: page redirects **and** per-action `vendorId` ownership checks.
+- Auditors are strictly read-only; their navigation omits all write surfaces and the server rejects write attempts.
+- Deactivated accounts fail sign-in and lose existing sessions immediately (sessions re-check `isActive` on every request).
 
 ## Getting started
 
@@ -196,14 +224,16 @@ VRAP runs on **PGlite**, a real PostgreSQL database compiled to WebAssembly. No 
 # 1. Install dependencies
 npm install
 
-# 2. Load the fictional demonstration dataset (wipes and re-seeds)
-npx tsx src/db/seed.ts
+# 2. Load the fictional demonstration dataset (wipes and re-seeds, incl. passwords)
+npm run db:seed
 
 # 3. Start the development server
 npm run dev
 ```
 
-The application will be available at `http://localhost:3000`.
+The application is available at `http://localhost:3000` — sign in with any [demo account](#demo-accounts-sign-in-with-email--password).
+
+> `npm run db:seed` runs `tsx src/db/seed.ts`. On first app start with an empty PGlite data directory the schema is created and demo data is auto-seeded automatically.
 
 ### Using an external PostgreSQL database (optional)
 
@@ -212,13 +242,13 @@ To run against a real PostgreSQL instance instead of PGlite:
 ```bash
 # Create .env with your connection string
 echo "DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/app_db" > .env
-echo "VRAP_SESSION_SECRET=change-me-in-production" >> .env
+echo "VRAP_SESSION_SECRET=$(openssl rand -hex 32)" >> .env
 
 # Create tables
 npx drizzle-kit push --force
 
 # Seed demonstration data
-npx tsx src/db/seed.ts
+npm run db:seed
 
 # Start
 npm run dev
@@ -226,54 +256,87 @@ npm run dev
 
 ## Deploying to Vercel
 
-VRAP is ready to deploy on [Vercel](https://vercel.com) with zero configuration. On Vercel, PGlite runs **in-memory** (the serverless filesystem is ephemeral), so the database is auto-seeded with the fictional demo dataset on each cold start.
+VRAP deploys to [Vercel](https://vercel.com) with zero configuration. On Vercel, PGlite runs **in-memory** (the serverless filesystem is ephemeral), so the database is auto-created and auto-seeded with the fictional demo dataset on every cold start — including user accounts (it takes a few seconds on the first hit per instance).
 
-### One-click deploy
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Dhanrajrana/vendor-risk-assessment-portal)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/dhanraj5893/VRAP1)
 
 ### Manual deploy
 
 1. Push this repository to GitHub.
 2. In the Vercel dashboard, click **Add New Project** and import your GitHub repo.
 3. Under **Environment Variables**, add:
-   - `VRAP_SESSION_SECRET` — any random string (used to sign session cookies).
-4. Leave `DATABASE_URL` **unset** — this tells VRAP to use PGlite instead of an external Postgres.
-5. Click **Deploy**.
+   - `VRAP_SESSION_SECRET` — any long random string (used to sign session cookies). Generate one with `openssl rand -hex 32`.
+4. Leave `DATABASE_URL` **unset** — this tells VRAP to use PGlite instead of external Postgres.
+5. Click **Deploy**. `vercel.json` pins the `bom1` (Mumbai) region, framework `nextjs`, and the default install/build commands.
 
 ### Notes for the Vercel deployment
 
-- Each serverless cold start creates a fresh in-memory PGlite database, which is auto-seeded with demo data (8 vendors, 14 standards, users, questionnaires, evidence, etc.).
+- Each serverless cold start creates a fresh in-memory PGlite database, auto-seeded with demo data (8 vendors, 14 standards, 5 role accounts, questionnaires, evidence, audit reports, etc.).
+- **Sessions survive cold starts.** Session tokens key the user by email (not just serial id), so signing out is not forced when the demo database is re-created.
 - To force a re-seed without redeploying, call `POST /api/seed` (e.g. `curl -X POST https://your-app.vercel.app/api/seed`).
-- Data does **not** persist across cold starts on Vercel (ephemeral filesystem). For persistent data, connect an external PostgreSQL via `DATABASE_URL`.
+- Data does **not** persist across cold starts on Vercel (ephemeral filesystem). For persistent data, connect an external PostgreSQL via `DATABASE_URL` (e.g. Vercel Postgres, Neon, Supabase) and run `npm run db:seed` once against it.
+- `POST /api/seed` refuses to run in external-Postgres mode (it is a PGlite demo convenience only).
 
 ## Suggested demo walkthrough
 
-1. **Sign in as Dhanraj Rana (Administrator)** — review the dashboard KPIs, tier distribution, evidence freshness, and resilience watch.
+1. **Sign in as Dhanraj Rana (`dhanraj.rana@demo.vrap` / `admin123`)** — review the portfolio command center: KPIs, tier distribution, evidence freshness, resilience watch, focus cards.
 2. **Vendor register → Nimbus Cloud Hosting** — examine inherent exposure, service dependencies (90% concentration on the customer portal), evidence register, resilience gap, and contract / DPDP / exit record.
 3. **Regulatory coverage** — open the standards × vendor heatmap; record compliance status for applicable frameworks.
 4. **Incidents & triggers** — review recorded incidents and sub-processors; raise or resolve a reassessment trigger.
 5. **Assessments → Nimbus v2 (in review)** — walk the explainable scoring panel, questionnaire, linked evidence, and reviewer workspace.
-6. **Sign in as Chaitanya Nagre (Approver)** — record a conditional approval with rationale and reassessment horizon.
-7. **Sign in as Jenil Dalal (Vendor representative)** — confirm the vendor-scoped view showing only Nimbus data; submit responses and register evidence.
-8. **Scoring model (Administrator)** — adjust inherent weights, mitigation cap, or tier thresholds and observe the impact.
-9. **Access control (Administrator)** — provision a user, assign a role, and review the RBAC matrix.
-10. **Reports → Generate reports** — produce a portfolio, vendor, compliance, audit-trail, evidence, findings, access, or evaluation report; view or print it.
-11. **Evaluation** — complete the four scenario tasks and submit Likert feedback.
-12. **Project status** — review module-by-module implementation status.
+6. **Sign in as Chaitanya Nagre (`approver123`)** — record a conditional approval with rationale and reassessment horizon from the decision inbox.
+7. **Sign in as Jenil Dalal (`vendor123`)** — confirm the vendor-scoped view showing only Nimbus data; submit responses and register evidence.
+8. **Sign in as Elena Rossi (`auditor123`)** — confirm read-only mode: reports, compliance matrix and monitoring visible; no edit affordances anywhere; write actions are rejected server-side.
+9. **Scoring model (administrator)** — adjust inherent weights, mitigation cap, or tier thresholds and observe the impact.
+10. **Access control (administrator)** — provision an account, reset a password, deactivate/reactivate it, review the RBAC matrix.
+11. **Reports → Generate reports** — produce a portfolio, vendor, compliance, audit-trail, evidence, findings, access, or evaluation report; view or print it.
+12. **Evaluation** — complete the four scenario tasks and submit Likert feedback.
+13. **About & help** — the in-app guide to roles, modules and the scoring model.
 
 ## Architecture & data model
 
-- **Framework:** Next.js 16 (App Server), React 19, TypeScript, Tailwind CSS 4
+- **Framework:** Next.js 16 (App Router, server actions), React 19, TypeScript, Tailwind CSS 4
 - **Database:** PGlite (WASM Postgres) by default; PostgreSQL via `pg` / `node-postgres` when `DATABASE_URL` is set
 - **ORM:** Drizzle ORM 0.45
+- **Auth:** email + password (scrypt hashes), HMAC-signed httpOnly session cookies, email-keyed sessions
 - **Charts:** recharts
 
 Core tables: `users`, `business_services`, `vendors`, `vendor_services`, `question_templates`, `questions`, `assessments`, `answers`, `evidence`, `resilience_records`, `findings`, `actions`, `exceptions`, `audit_events`.
 
 TPRM extension tables: `standards`, `vendor_compliance`, `scoring_config`, `audit_reports`, `sub_processors`, `incidents`, `reassessment_triggers`, `evaluation_tasks`, `evaluation_feedback`.
 
-Server actions (`src/app/actions.ts`) enforce `can(role, action)` permissions and write audit events for every state-changing operation.
+Server actions (`src/app/actions.ts`) enforce `can(role, action)` permissions and write audit events for every state-changing operation. Page-level RBAC guards live in each `page.tsx`. The permission matrix is defined once in `src/lib/auth.ts` (`PERMISSION_MATRIX`) and rendered on the Access control page.
+
+## Verification & testing
+
+Everything below was run against the production build (`npm run build && npm start`):
+
+**Build & static checks**
+- `npm run build` — clean (10 routes dynamic, type-checked).
+- `npm run lint` — 0 errors, 0 warnings.
+- `npm run typecheck` — clean.
+
+**Authentication lifecycle (HTTP, cookie jars per persona)**
+- All 5 demo accounts sign in → 303 redirect to `/` (vendor rep → `/vendors/<own id>`).
+- Wrong password, unknown email → 303 `/login?error=invalid`; deactivated account → `/login?error=disabled`; no-password account → `/login?error=nopassword`.
+- Admin provisions a new account via `/access` → the new credentials work; deactivation blocks sign-in; admin resets the password → old password rejected, new one works; old sessions invalidated appropriately.
+- Garbage/forged `vrap_session` cookie → redirect to `/login`.
+
+**RBAC page-permission matrix (all roles × all routes)** — `/`, `/vendors`, `/vendors/[id]`, `/assessments`, `/assessments/[id]`, `/services`, `/actions`, `/exceptions`, `/compliance`, `/monitoring`, `/reports`, `/reports/generated`, `/access`, `/settings`, `/evaluation`, `/roadmap`, `/about` — each role sees exactly what the matrix allows; vendor rep is redirected away from other vendors' records to their own; admin-only pages refuse everyone else.
+
+**Resilience**
+- Fresh boot with empty PGlite data directory auto-creates schema and auto-seeds (verified — this fixed a first-request deadlock).
+- `POST /api/seed` re-seeds cleanly; sessions keyed by email survive re-seeds (verified).
+- Audit trail records sign-ins, failed sign-ins, deactivations, password resets and all business actions (verified on dashboard + reports).
+
+## Security notes
+
+- Passwords hashed with **scrypt** (Node `crypto`), per-user random salt, timing-safe comparison; never logged, never stored in plain text.
+- Sessions are HMAC-SHA256 signed, httpOnly, `sameSite=lax`, 7-day expiry; the signature check uses a timing-safe comparison; deactivated accounts are re-checked on every request.
+- Sign-in attempts (success **and** failure) are written to the audit trail with timestamp and actor.
+- Server actions re-authorise on every call; client-side hiding is never the only control.
+- Failed logins use a constant-work dummy hash so response timing does not reveal whether an email exists.
+- Reporting bugs: this is an academic prototype — see [Limitations](#limitations--out-of-scope).
 
 ## Evaluation & validation
 
@@ -291,11 +354,24 @@ Evaluation proceeds only after faculty-guide and any required institutional appr
 
 This is a demonstration prototype, not a production system. The following are intentionally out of scope at this stage:
 - Integrations with procurement, identity, or ticketing systems
-- Multi-tenant production hardening and single sign-on
+- Multi-tenant production hardening and single sign-on (SAML/OIDC)
 - Threat-intel feeds and automated external data ingestion
 - Dedicated AI-governance and DPDP privacy-assessment workflows (partial coverage exists via the standards matrix)
+- Password self-service reset via email (resets are admin-performed on the Access control page)
 
 No score, report, or automated output in VRAP constitutes a compliance determination, supplier approval, or substitute for professional judgement.
+
+## Changelog
+
+### v1.0 — completion & hardening (2026-11-26)
+
+- **Credential sign-in:** replaced the pick-a-persona login with manual email + password entry; scrypt-hashed credentials; forgot-nothing flow (admin resets); plaintext secrets never stored.
+- **Account lifecycle on `/access`:** provision with temporary password, per-user password reset, role/vendor edits, activate/deactivate — all audited.
+- **New About & help page** (`/about`) with roles, capabilities, stack, standards and disclaimer; linked from sidebar for all roles.
+- **Redesigned portfolio dashboard** — role-aware focus cards, decision inbox for approvers, personalized greeting, compliance-coverage KPI, denser KPI strip.
+- **RBAC gaps closed:** any-signed-in-user could register evidence/submit assessments/flip action statuses — now role-checked; auditors blocked from findings/exceptions (read-only elsewhere); monitoring create-forms had an impossible empty `vendorId` (they now carry a vendor picker); 36 hidden inputs across pages were rendered as visible text boxes (now `type="hidden"`).
+- **Critical boot fix:** fresh PGlite databases deadlocked the first request (auto-seed awaited a promise that itself awaited the seed). Schema bootstrap and auto-seed are now re-entrancy safe; sessions keyed by email survive re-seeds (Vercel cold starts no longer log everyone out); the import-time double-seed side effect was removed (CLI seeding is guarded to direct execution and seeds exactly once).
+- **README rewritten** with demo accounts, security notes, verification evidence and Vercel deploy guide; lint clean (0 errors, 0 warnings).
 
 ---
 

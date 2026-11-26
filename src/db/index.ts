@@ -26,6 +26,7 @@ const globalForDb = globalThis as typeof globalThis & {
   __arenaPgliteDb?: PgDb;
   __arenaPgliteReady?: Promise<void>;
   __arenaPgliteSeeded?: boolean;
+  __arenaPgliteBootstrapping?: boolean;
 };
 
 let db: PgDb;
@@ -47,13 +48,21 @@ if (usePglite) {
         await client.exec(stmt);
       }
       // Auto-seed once per cold start if the database is empty.
-      if (!globalForDb.__arenaPgliteSeeded) {
+      if (!process.env.VRAP_SKIP_AUTOSEED && !globalForDb.__arenaPgliteSeeded) {
         const existing = await pgliteDb
           .select()
           .from(schema.users)
           .limit(1);
         if (existing.length === 0) {
-          await seedData(pgliteDb);
+          // Mark the bootstrap as in-flight so seedData()'s own ensureDb()
+          // call returns immediately instead of awaiting this very promise
+          // (which would deadlock every first request on a fresh database).
+          globalForDb.__arenaPgliteBootstrapping = true;
+          try {
+            await seedData(pgliteDb);
+          } finally {
+            globalForDb.__arenaPgliteBootstrapping = false;
+          }
           globalForDb.__arenaPgliteSeeded = true;
         }
       }
@@ -85,6 +94,9 @@ export const usePgliteForVercel = usePglite;
  */
 export async function ensureDb(): Promise<void> {
   if (!usePglite) return;
+  // Re-entrant call from inside the PGlite bootstrap (seedData) — tables are
+  // already created by the bootstrap, so don't await the in-flight promise.
+  if (globalForDb.__arenaPgliteBootstrapping) return;
   const ready = globalForDb.__arenaPgliteReady;
   if (ready) await ready;
 }

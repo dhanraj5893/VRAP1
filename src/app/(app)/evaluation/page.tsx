@@ -69,7 +69,7 @@ export default async function EvaluationPage() {
                 <div className="text-[11.5px] text-zinc-400 mb-3">{t.instructions}</div>
                 <div className="text-[11px] font-medium text-teal-300">Expected outcome: {t.expectedOutcome}</div>
                 <form action={submitEvaluationAction} className="mt-4 space-y-2">
-                  <input name="taskId" value={String(t.id)} />
+                  <input type="hidden" name="taskId" value={String(t.id)} />
                   <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium mb-2">Rate this task (1-5)</div>
                   <div className="grid gap-2 sm:grid-cols-3">
                     {RATING_FIELDS.map(({ key, label }) => (

@@ -1,5 +1,7 @@
 /* VRAP demo seed - fictional vendors only. Safe to re-run: it wipes all tables. */
 import "dotenv/config";
+import { pathToFileURL } from "node:url";
+import { resolve } from "node:path";
 import { db, ensureDb, pool } from "./index";
 import {
   actions,
@@ -28,12 +30,21 @@ import {
 } from "./schema";
 import { eq } from "drizzle-orm";
 import { STANDARDS_CATALOG, isStandardApplicable } from "../lib/standards";
+import { hashPassword } from "../lib/password";
+
+// Demo credentials — documented in README.md (demo data only, change before real deployment).
+export const DEMO_PASSWORDS = {
+  admin: "admin123",
+  reviewer: "reviewer123",
+  approver: "approver123",
+  vendor: "vendor123",
+  auditor: "auditor123",
+} as const;
 
 const days = (n: number) => new Date(Date.now() + n * 86400000);
 
 export async function seedData(targetDb: typeof db) {
-  // Bootstrap PGlite schema before any DML (no-op for real Postgres).
-  await ensureDb();
+  // Callers (CLI, /api/seed, PGlite auto-bootstrap) guarantee the schema exists.
   console.log("Clearing existing data...");
   await targetDb.delete(auditEvents);
   await targetDb.delete(answers);
@@ -63,9 +74,9 @@ export async function seedData(targetDb: typeof db) {
   const [admin, reviewer, approver] = await db
     .insert(users)
     .values([
-      { name: "Dhanraj Rana", email: "dhanraj.rana@demo.vrap", role: "admin" },
-      { name: "Raj Jadav", email: "raj.jadav@demo.vrap", role: "reviewer" },
-      { name: "Chaitanya Nagre", email: "chaitanya.nagre@demo.vrap", role: "approver" },
+      { name: "Dhanraj Rana", email: "dhanraj.rana@demo.vrap", role: "admin", passwordHash: hashPassword(DEMO_PASSWORDS.admin) },
+      { name: "Raj Jadav", email: "raj.jadav@demo.vrap", role: "reviewer", passwordHash: hashPassword(DEMO_PASSWORDS.reviewer) },
+      { name: "Chaitanya Nagre", email: "chaitanya.nagre@demo.vrap", role: "approver", passwordHash: hashPassword(DEMO_PASSWORDS.approver) },
     ])
     .returning();
 
@@ -235,8 +246,8 @@ export async function seedData(targetDb: typeof db) {
   const [mayaRep, auditor] = await db
     .insert(users)
     .values([
-      { name: "Jenil Dalal (Nimbus)", email: "jenil.dalal@demo.vrap", role: "vendor", vendorId: nimbus.id },
-      { name: "Elena Rossi", email: "elena.rossi@demo.vrap", role: "auditor" },
+      { name: "Jenil Dalal (Nimbus)", email: "jenil.dalal@demo.vrap", role: "vendor", vendorId: nimbus.id, passwordHash: hashPassword(DEMO_PASSWORDS.vendor) },
+      { name: "Elena Rossi", email: "elena.rossi@demo.vrap", role: "auditor", passwordHash: hashPassword(DEMO_PASSWORDS.auditor) },
     ])
     .returning();
 
@@ -695,20 +706,39 @@ export async function seedData(targetDb: typeof db) {
   ]);
 
   console.log("Seed complete.");
-  console.log("Demo logins:", { admin: admin.email, reviewer: reviewer.email, approver: approver.email, vendor: mayaRep.email });
+  console.log("Demo logins (email / password):");
+  console.log(`  administrator → ${admin.email} / ${DEMO_PASSWORDS.admin}`);
+  console.log(`  reviewer      → ${reviewer.email} / ${DEMO_PASSWORDS.reviewer}`);
+  console.log(`  approver      → ${approver.email} / ${DEMO_PASSWORDS.approver}`);
+  console.log(`  vendor rep    → ${mayaRep.email} / ${DEMO_PASSWORDS.vendor}`);
+  console.log(`  auditor       → elena.rossi@demo.vrap / ${DEMO_PASSWORDS.auditor}`);
 }
 
 async function main() {
+  // The CLI seeds explicitly exactly once — tell the PGlite bootstrap not to
+  // auto-seed on top of it.
+  process.env.VRAP_SKIP_AUTOSEED = "1";
   await ensureDb();
   await seedData(db);
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    if (pool) await pool.end();
-    // PGlite flushes its data directory when the process exits.
-  });
+// Only run when executed directly (e.g. `npx tsx src/db/seed.ts`) — never on import.
+// src/db/index.ts imports seedData() for auto-seeding an empty database;
+// running the CLI must be the only path that wipes and re-seeds via main().
+const isDirectRun = (() => {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  return import.meta.url === pathToFileURL(resolve(entry)).href;
+})();
+
+if (isDirectRun) {
+  main()
+    .catch((e) => {
+      console.error(e);
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      if (pool) await pool.end();
+      // PGlite flushes its data directory when the process exits.
+    });
+}

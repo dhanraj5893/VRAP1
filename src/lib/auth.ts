@@ -23,8 +23,15 @@ function sign(payload: string): string {
   return crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
 }
 
-export async function setSession(userId: number) {
-  const payload = JSON.stringify({ uid: userId, t: Date.now() });
+function signatureMatches(payload: string, provided: string): boolean {
+  const expected = sign(payload);
+  const a = Buffer.from(expected);
+  const b = Buffer.from(provided);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+export async function setSession(userId: number, email?: string) {
+  const payload = JSON.stringify({ uid: userId, ...(email ? { email } : {}), t: Date.now() });
   const token = Buffer.from(payload).toString("base64url") + "." + sign(payload);
   const jar = await cookies();
   jar.set(COOKIE, token, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 7 });
@@ -48,10 +55,15 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   } catch {
     return null;
   }
-  if (sign(payload) !== sig) return null;
+  if (!signatureMatches(payload, sig)) return null;
   try {
-    const { uid } = JSON.parse(payload) as { uid: number };
-    const user = await db.query.users.findFirst({ where: eq(users.id, uid) });
+    const parsed = JSON.parse(payload) as { uid: number; email?: string };
+    // Prefer email lookup: on ephemeral deployments the database is re-seeded on
+    // cold start, which re-creates users with identical emails but new ids.
+    // Email-keyed sessions survive re-seeds; uid remains as a fallback.
+    const user = parsed.email
+      ? await db.query.users.findFirst({ where: eq(users.email, parsed.email) })
+      : await db.query.users.findFirst({ where: eq(users.id, parsed.uid) });
     if (!user) return null;
     // Access control: deactivated accounts lose their session immediately.
     if (user.isActive === false) return null;

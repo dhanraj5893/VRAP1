@@ -54,7 +54,10 @@ export default async function MonitoringPage() {
             <SectionTitle title="Incidents" hint="Recorded vendor incidents" />
             {canManage && (
               <form action={addIncidentAction} className="space-y-2">
-                <input name="vendorId" value="" />
+                <select name="vendorId" required defaultValue="" className="w-full rounded border border-white/10 bg-white/4 px-2 py-2 text-[11.5px] focus:border-teal-400 outline-none">
+                  <option value="" disabled>Select vendor…</option>
+                  {vends.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+                </select>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <input name="title" placeholder="Title" className="rounded border border-white/10 bg-white/4 px-2 py-2 text-[11.5px] focus:border-teal-400 outline-none" />
                   <select name="severity" className="rounded border border-white/10 bg-white/4 px-2 py-2 text-[11.5px] focus:border-teal-400 outline-none">
@@ -87,7 +90,7 @@ export default async function MonitoringPage() {
                       <span>{i.inc.occurredAt ? new Date(i.inc.occurredAt).toISOString().slice(0, 10) : "—"}</span>
                     </div>
                     <form action={updateIncidentStatusAction} className="mt-1.5 flex gap-1.5">
-                      <input name="id" value={String(i.inc.id)} />
+                      <input type="hidden" name="id" value={String(i.inc.id)} />
                       <select name="status" defaultValue={i.inc.status} className="rounded border border-white/10 bg-white/4 px-2 py-1 text-[10px] focus:border-teal-400 outline-none">
                         <option value="open">Open</option>
                         <option value="investigating">Investigating</option>
@@ -109,7 +112,10 @@ export default async function MonitoringPage() {
             <SectionTitle title="Sub-processors" hint="Vendor&rsquo;s fourth parties" />
             {canManage && (
               <form action={addSubProcessorAction} className="space-y-2">
-                <input name="vendorId" value="" />
+                <select name="vendorId" required defaultValue="" className="w-full rounded border border-white/10 bg-white/4 px-2 py-2 text-[11.5px] focus:border-teal-400 outline-none">
+                  <option value="" disabled>Select vendor…</option>
+                  {vends.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+                </select>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <input name="name" placeholder="Name" className="rounded border border-white/10 bg-white/4 px-2 py-2 text-[11.5px] focus:border-teal-400 outline-none" />
                   <input name="country" placeholder="Country" className="rounded border border-white/10 bg-white/4 px-2 py-2 text-[11.5px] focus:border-teal-400 outline-none" />
@@ -146,8 +152,8 @@ export default async function MonitoringPage() {
                       <span>{s.sp.dataCategories}</span>
                     </div>
                     <form action={removeSubProcessorAction} className="mt-1.5">
-                      <input name="id" value={String(s.sp.id)} />
-                      <input name="vendorId" value={String(s.sp.vendorId)} />
+                      <input type="hidden" name="id" value={String(s.sp.id)} />
+                      <input type="hidden" name="vendorId" value={String(s.sp.vendorId)} />
                       <button className="rounded bg-white/5 px-2 py-1 text-[10px] font-medium text-zinc-400 hover:text-rose-300 hover:bg-rose-400/8">Remove</button>
                     </form>
                   </div>
@@ -163,7 +169,10 @@ export default async function MonitoringPage() {
             <SectionTitle title="Reassessment triggers" hint="Open triggers ready to convert or dismiss" />
             {canManage && (
               <form action={raiseTriggerAction} className="space-y-2">
-                <input name="vendorId" value="" />
+                <select name="vendorId" required defaultValue="" className="w-full rounded border border-white/10 bg-white/4 px-2 py-2 text-[11.5px] focus:border-teal-400 outline-none">
+                  <option value="" disabled>Select vendor…</option>
+                  {vends.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+                </select>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <input name="reason" placeholder="Reason" className="rounded border border-white/10 bg-white/4 px-2 py-2 text-[11.5px] focus:border-teal-400 outline-none" />
                   <select name="triggerType" className="rounded border border-white/10 bg-white/4 px-2 py-2 text-[11.5px] focus:border-teal-400 outline-none">
@@ -196,7 +205,7 @@ export default async function MonitoringPage() {
                       <span>{t.trg.status}</span>
                     </div>
                     <form action={resolveTriggerAction} className="mt-1.5 flex gap-1.5">
-                      <input name="id" value={String(t.trg.id)} />
+                      <input type="hidden" name="id" value={String(t.trg.id)} />
                       <button name="decision" value="converted" className="rounded bg-emerald-400/8 px-2 py-1 text-[10px] font-medium text-emerald-300 hover:bg-emerald-400/15">Convert → assess</button>
                       <button name="decision" value="dismissed" className="rounded bg-white/5 px-2 py-1 text-[10px] font-medium text-zinc-400 hover:bg-white/10">Dismiss</button>
                     </form>

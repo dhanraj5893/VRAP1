@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ExceptionsPage() {
   const user = await requireUser();
-  if (user.role === "vendor") redirect("/");
+  if (user.role === "vendor" || user.role === "auditor") redirect("/");
   const rows = await listExceptionsWithVendors();
   const canDecide = ["admin", "approver"].includes(user.role);
 

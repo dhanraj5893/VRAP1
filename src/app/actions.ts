@@ -29,6 +29,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { can, clearSession, getSessionUser, setSession } from "@/lib/auth";
+import { hashPassword, verifyPassword, DUMMY_HASH, isStrongEnough } from "@/lib/password";
 import { getPortfolioSnapshot, getScoringParams } from "@/lib/data";
 import { isStandardApplicable } from "@/lib/standards";
 import { tierOf } from "@/lib/scoring";
@@ -92,16 +93,29 @@ function dateOrNull(v: string): Date | null {
 
 export async function loginAction(formData: FormData) {
   await ensureDb();
-  const userId = intOrNull(str(formData, "userId"));
-  if (!userId) redirect("/login?error=1");
-  const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
-  if (!user) redirect("/login?error=1");
+  const email = str(formData, "email").toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  if (!email || !password) redirect("/login?error=missing");
+  const user = await db.query.users.findFirst({ where: eq(users.email, email) });
+  // Verify against a dummy hash when the email is unknown so the response
+  // time does not reveal whether the account exists.
+  const passwordOk = verifyPassword(password, user?.passwordHash || DUMMY_HASH);
+  if (!user || !passwordOk) {
+    if (user) {
+      await audit("user", user.id, "Sign-in failed", `${user.name} entered an incorrect password.`, null);
+    }
+    redirect("/login?error=invalid");
+  }
   // Access control: deactivated accounts are refused and the attempt is audited.
   if (user.isActive === false) {
     await audit("user", user.id, "Sign-in blocked", `${user.name} attempted sign-in with a deactivated account.`, null);
     redirect("/login?error=disabled");
   }
-  await setSession(user.id);
+  if (!user.passwordHash) {
+    // Account exists but has no password set yet (provisioned before credentials existed).
+    redirect("/login?error=nopassword");
+  }
+  await setSession(user.id, user.email);
   await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
   const detail =
     user.role === "vendor" && user.vendorId
@@ -324,7 +338,11 @@ export async function registerEvidenceAction(formData: FormData) {
   const assessmentId = intOrNull(str(formData, "assessmentId"));
   const questionId = intOrNull(str(formData, "questionId"));
   if (!vendorId) throw new Error("vendorId required");
-  if (user.role === "vendor" && user.vendorId !== vendorId) throw new Error("Not your vendor record");
+  if (user.role === "vendor") {
+    if (user.vendorId !== vendorId) throw new Error("Not your vendor record");
+  } else if (user.role !== "admin" && user.role !== "reviewer") {
+    throw new Error("Not permitted");
+  }
 
   const [ev] = await db
     .insert(evidence)
@@ -387,7 +405,11 @@ export async function submitAssessmentAction(formData: FormData) {
   if (!id) throw new Error("id required");
   const a = await db.query.assessments.findFirst({ where: eq(assessments.id, id) });
   if (!a) throw new Error("Assessment not found");
-  if (user.role === "vendor" && user.vendorId !== a.vendorId) throw new Error("Not yours");
+  if (user.role === "vendor") {
+    if (user.vendorId !== a.vendorId) throw new Error("Not yours");
+  } else if (!can(user, "review")) {
+    throw new Error("Not permitted");
+  }
 
   await db.update(assessments).set({ status: "in_review", submittedAt: new Date() }).where(eq(assessments.id, id));
   await db.update(vendors).set({ status: "review" }).where(eq(vendors.id, a.vendorId));
@@ -569,7 +591,11 @@ export async function updateActionStatusAction(formData: FormData) {
   if (!["open", "in_progress", "done"].includes(status)) throw new Error("Bad status");
   const existing = await db.query.actions.findFirst({ where: eq(actions.id, id) });
   if (!existing) throw new Error("Action not found");
-  if (user.role === "vendor" && user.vendorId !== existing.vendorId) throw new Error("Not permitted");
+  if (user.role === "vendor") {
+    if (user.vendorId !== existing.vendorId) throw new Error("Not permitted");
+  } else if (user.role !== "admin" && user.role !== "reviewer") {
+    throw new Error("Not permitted");
+  }
   await db
     .update(actions)
     .set({ status, completedAt: status === "done" ? new Date() : null })
@@ -891,10 +917,15 @@ export async function createUserAction(formData: FormData) {
   if (!["admin", "reviewer", "approver", "vendor", "auditor"].includes(role)) throw new Error("Bad role");
   const vendorId = role === "vendor" ? intOrNull(str(formData, "vendorId")) : null;
   if (role === "vendor" && !vendorId) throw new Error("Vendor representatives must be linked to a vendor");
+  const password = String(formData.get("password") ?? "");
+  if (!isStrongEnough(password)) throw new Error("Password must be at least 6 characters");
   const exists = await db.query.users.findFirst({ where: eq(users.email, email) });
   if (exists) throw new Error("A user with that email already exists");
-  const [created] = await db.insert(users).values({ name, email, role, vendorId }).returning();
-  await audit("user", created.id, "User created", `${name} (${role}${vendorId ? `, vendor #${vendorId}` : ""}) provisioned.`, user.id);
+  const [created] = await db
+    .insert(users)
+    .values({ name, email, role, vendorId, passwordHash: hashPassword(password) })
+    .returning();
+  await audit("user", created.id, "User created", `${name} (${role}${vendorId ? `, vendor #${vendorId}` : ""}) provisioned with a credential.`, user.id);
   revalidatePath("/access");
 }
 
@@ -925,6 +956,20 @@ export async function toggleUserActiveAction(formData: FormData) {
   const next = !(target.isActive ?? true);
   await db.update(users).set({ isActive: next }).where(eq(users.id, id));
   await audit("user", id, next ? "Account reactivated" : "Account deactivated", `${target.name} ${next ? "re-enabled" : "disabled"}.`, user.id);
+  revalidatePath("/access");
+}
+
+export async function resetPasswordAction(formData: FormData) {
+  const user = await mustUser();
+  if (!can(user, "manageUsers")) throw new Error("Not permitted");
+  const id = intOrNull(str(formData, "id"));
+  if (!id) throw new Error("id required");
+  const target = await db.query.users.findFirst({ where: eq(users.id, id) });
+  if (!target) throw new Error("User not found");
+  const password = String(formData.get("password") ?? "");
+  if (!isStrongEnough(password)) throw new Error("Password must be at least 6 characters");
+  await db.update(users).set({ passwordHash: hashPassword(password) }).where(eq(users.id, id));
+  await audit("user", id, "Password reset", `Password for ${target.name} was reset by an administrator.`, user.id);
   revalidatePath("/access");
 }
 

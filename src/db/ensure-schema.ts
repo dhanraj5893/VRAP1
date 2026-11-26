@@ -14,6 +14,7 @@ export const DDL_STATEMENTS: string[] = [
     role TEXT NOT NULL DEFAULT 'reviewer',
     vendor_id INTEGER,
     is_active BOOLEAN NOT NULL DEFAULT true,
+    password_hash TEXT NOT NULL DEFAULT '',
     last_login_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT now()
   )`,
@@ -277,6 +278,7 @@ export const DDL_STATEMENTS: string[] = [
   )`,
   // --- evolution guards for databases created before the TPRM extensions ---
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT NOT NULL DEFAULT ''`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP`,
   `ALTER TABLE vendors ADD COLUMN IF NOT EXISTS contract_start TIMESTAMP`,
   `ALTER TABLE vendors ADD COLUMN IF NOT EXISTS contract_end TIMESTAMP`,
