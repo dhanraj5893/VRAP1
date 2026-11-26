@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { listUsers, listVendorNames } from "@/lib/data";
-import { createUserAction, updateUserAction, toggleUserActiveAction } from "@/app/actions";
+import { createUserAction, updateUserAction, toggleUserActiveAction, resetPasswordAction } from "@/app/actions";
 import { Card, SectionTitle, Pill } from "@/components/ui";
 import { PERMISSION_MATRIX } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -58,6 +58,7 @@ export default async function AccessPage() {
                   {vendorNames.map((v) => <option key={v.id} value={String(v.id)}>{v.name}</option>)}
                 </select>
               </div>
+              <input name="password" type="password" placeholder="Temporary password (min 6 chars)" minLength={6} required autoComplete="new-password" className="rounded border border-white/10 bg-white/4 px-2 py-2 text-[11.5px] focus:border-teal-400 outline-none" />
               <button className="w-full rounded-lg bg-teal-400/10 px-3 py-2 text-[11px] font-medium text-teal-300 hover:bg-teal-400/20">Provision</button>
             </form>
           </div>
@@ -88,7 +89,7 @@ export default async function AccessPage() {
                       <td className="px-3 py-3 text-zinc-400">{vendorName ?? "—"}</td>
                       <td className="px-3 py-3">
                         <form action={toggleUserActiveAction}>
-                          <input name="id" value={String(u.id)} />
+                          <input type="hidden" name="id" value={String(u.id)} />
                           <button
                             name="active"
                             value={String(!active)}
@@ -108,8 +109,9 @@ export default async function AccessPage() {
                         {u.lastLoginAt ? new Date(u.lastLoginAt).toISOString().slice(0, 10) : "Never"}
                       </td>
                       <td className="px-5 py-3">
+                        <div className="flex flex-col gap-1.5">
                         <form action={updateUserAction} className="flex gap-1.5">
-                          <input name="id" value={String(u.id)} />
+                          <input type="hidden" name="id" value={String(u.id)} />
                           <select name="role" defaultValue={u.role} className="rounded border border-white/10 bg-white/4 px-2 py-1.5 text-[10px] focus:border-teal-400 outline-none">
                             {["admin", "reviewer", "approver", "vendor", "auditor"].map((r) => (
                               <option key={r} value={r}>{r}</option>
@@ -123,6 +125,12 @@ export default async function AccessPage() {
                           </select>
                           <button className="rounded bg-white/5 px-2 py-1.5 text-[10px] font-medium text-zinc-300 hover:bg-white/10">Save</button>
                         </form>
+                        <form action={resetPasswordAction} className="flex gap-1.5">
+                          <input type="hidden" name="id" value={String(u.id)} />
+                          <input name="password" type="password" required minLength={6} autoComplete="new-password" placeholder="New password" className="w-24 rounded border border-white/10 bg-white/4 px-2 py-1.5 text-[10px] focus:border-teal-400 outline-none" />
+                          <button className="rounded bg-white/5 px-2 py-1.5 text-[10px] font-medium text-zinc-300 hover:bg-white/10">Reset password</button>
+                        </form>
+                        </div>
                       </td>
                     </tr>
                   );

@@ -1,28 +1,28 @@
-import { db } from "@/db";
-import { users } from "@/db/schema";
-import { getSessionUser, setSession, clearSession } from "@/lib/auth";
+import { loginAction } from "@/app/actions";
+import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { ShieldCheck, ArrowRight, CheckCircle2 } from "lucide-react";
-import { ROLE_LABELS } from "@/lib/utils";
-import { Suspense } from "react";
+import { ShieldCheck, ArrowRight, CheckCircle2, AlertCircle, KeyRound, Mail } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage() {
+const ERROR_MESSAGES: Record<string, string> = {
+  invalid: "Incorrect email or password. Please try again.",
+  missing: "Enter both your email and password.",
+  disabled: "This account has been deactivated. Contact an administrator.",
+  nopassword: "This account has no password set yet. Ask an administrator to reset it.",
+};
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const existing = await getSessionUser();
   if (existing) redirect("/");
 
-  const allUsers = await db.select().from(users);
-
-  async function login(formData: FormData) {
-    "use server";
-    const uid = parseInt(String(formData.get("userId") ?? ""), 10);
-    if (Number.isFinite(uid)) {
-      await clearSession();
-      await setSession(uid);
-    }
-    redirect("/");
-  }
+  const params = await searchParams;
+  const errorKey = typeof params.error === "string" ? params.error : undefined;
+  const errorMessage = errorKey ? (ERROR_MESSAGES[errorKey] ?? "Sign-in failed. Please try again.") : null;
 
   return (
     <div className="flex min-h-screen">
@@ -77,7 +77,7 @@ export default async function LoginPage() {
         </div>
       </div>
 
-      {/* Right: login */}
+      {/* Right: credential form */}
       <div className="flex flex-1 items-center justify-center p-8">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
@@ -88,46 +88,80 @@ export default async function LoginPage() {
           </div>
           <h2 className="font-display text-2xl font-semibold tracking-tight text-zinc-100">Sign in</h2>
           <p className="mt-1.5 text-[13px] text-zinc-500">
-            Demo login — pick a seeded persona to explore the role-based workflow.
+            Enter your portal email and password. Role-based access is enforced after sign-in.
           </p>
 
-          <Suspense>
-            <LoginError />
-          </Suspense>
+          {errorMessage && (
+            <div
+              role="alert"
+              className="mt-5 flex items-start gap-2.5 rounded-xl border border-rose-400/25 bg-rose-400/8 px-4 py-3 text-[12.5px] leading-snug text-rose-300"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.8} />
+              <span>{errorMessage}</span>
+            </div>
+          )}
 
-          <form action={login} className="mt-6 space-y-2.5">
-            {allUsers.map((u) => (
-              <label
-                key={u.id}
-                className="group flex cursor-pointer items-center gap-3 rounded-xl border border-white/8 bg-white/2 px-4 py-3 transition-all hover:border-teal-400/30 hover:bg-teal-400/4 has-checked:border-teal-400/50 has-checked:bg-teal-400/8"
-              >
-                <input type="radio" name="userId" value={u.id} defaultChecked={u.role === "admin"} className="accent-teal-400" />
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/8 text-[11px] font-bold text-zinc-200">
-                  {u.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
-                </div>
-                <div className="flex-1">
-                  <div className="text-[13px] font-medium text-zinc-100">{u.name}</div>
-                  <div className="text-[11px] text-zinc-500">{ROLE_LABELS[u.role] ?? u.role}</div>
-                </div>
-                <ArrowRight className="h-4 w-4 text-zinc-600 transition-transform group-hover:translate-x-0.5 group-has-checked:text-teal-300" strokeWidth={1.8} />
+          <form action={loginAction} className="mt-6 space-y-4">
+            <div>
+              <label htmlFor="email" className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-500">
+                Email / user ID
               </label>
-            ))}
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" strokeWidth={1.8} />
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  autoFocus
+                  autoComplete="username"
+                  placeholder="e.g. dhanraj.rana@demo.vrap"
+                  className="w-full rounded-xl border border-white/10 bg-white/4 py-2.5 pl-10 pr-3.5 text-[13px] text-zinc-100 placeholder-zinc-600 outline-none transition-colors focus:border-teal-400/60 focus:bg-teal-400/4"
+                />
+              </div>
+            </div>
 
-            <button type="submit" className="btn btn-primary mt-4 w-full justify-center !py-2.5 text-[13px]">
-              Continue to workspace
+            <div>
+              <label htmlFor="password" className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-500">
+                Password
+              </label>
+              <div className="relative">
+                <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" strokeWidth={1.8} />
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  className="w-full rounded-xl border border-white/10 bg-white/4 py-2.5 pl-10 pr-3.5 text-[13px] text-zinc-100 placeholder-zinc-600 outline-none transition-colors focus:border-teal-400/60 focus:bg-teal-400/4"
+                />
+              </div>
+            </div>
+
+            <button type="submit" className="btn btn-primary mt-2 w-full justify-center !py-2.5 text-[13px]">
+              Sign in to workspace
+              <ArrowRight className="h-4 w-4" strokeWidth={1.8} />
             </button>
           </form>
 
-          <p className="mt-6 text-[11px] leading-relaxed text-zinc-600">
+          <div className="mt-6 rounded-xl border border-white/8 bg-white/2 px-4 py-3">
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              <span className="font-medium text-zinc-400">Demo accounts.</span> Five role-based demo
+              personas are seeded (administrator, reviewer, approver, vendor representative, auditor).
+              Their IDs and passwords are documented in{" "}
+              <code className="rounded bg-white/6 px-1.5 py-0.5 font-mono text-[10px] text-teal-300">README.md</code>{" "}
+              under “Demo accounts”.
+            </p>
+          </div>
+
+          <p className="mt-5 text-[11px] leading-relaxed text-zinc-600">
             Roles demonstrated: administrator (full access), reviewer (evidence &amp; rationale),
-            approver (final decisions), and vendor representative (only their own assigned assessment).
+            approver (final decisions), vendor representative (own vendor record only) and auditor
+            (read-only portfolio access).
           </p>
         </div>
       </div>
     </div>
   );
-}
-
-function LoginError() {
-  return null;
 }

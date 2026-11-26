@@ -25,6 +25,8 @@ export const users = pgTable("users", {
   vendorId: integer("vendor_id"),
   // access control: deactivated accounts cannot sign in
   isActive: boolean("is_active").notNull().default(true),
+  // scrypt password hash (never stored in plain text); empty = cannot sign in
+  passwordHash: text("password_hash").notNull().default(""),
   lastLoginAt: timestamp("last_login_at", { mode: "date" }),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
 });

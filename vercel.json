@@ -4,8 +4,5 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["bom1"],
-  "env": {
-    "VRAP_SESSION_SECRET": "@vrap_session_secret"
-  }
+  "regions": ["bom1"]
 }

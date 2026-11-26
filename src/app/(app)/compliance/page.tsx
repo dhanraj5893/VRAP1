@@ -50,7 +50,7 @@ export default async function CompliancePage() {
           Map each vendor against the standards &amp; regulations that apply to them. Status is set
           manually by a reviewer/approver and appears on audit reports.{" "}
           <span className="text-teal-400/80">N/A</span> means the framework is not applicable to
-          that vendor's profile.
+          that vendor&rsquo;s profile.
         </p>
       </header>
 
@@ -81,7 +81,7 @@ export default async function CompliancePage() {
 
       <div className="flex items-center gap-2">
         <form action={syncComplianceAction}>
-          <input name="vendorId" value="0" />
+          <input type="hidden" name="vendorId" value="0" />
           <button className="inline-flex items-center gap-1.5 rounded-lg border border-white/8 bg-white/6 px-3 py-2 text-[12px] font-medium text-zinc-300 hover:bg-white/10">
             <span className="text-[11px]">Sync register</span>
           </button>
@@ -130,8 +130,8 @@ export default async function CompliancePage() {
                         <td key={v.id} className="px-3 py-3">
                           {user.role === "admin" || user.role === "reviewer" ? (
                             <form action={setComplianceAction}>
-                              <input name="id" value={row ? row.id : 0} />
-                              <input name="vendorId" value={v.id} />
+                              <input type="hidden" name="id" value={row ? row.id : 0} />
+                              <input type="hidden" name="vendorId" value={v.id} />
                               <select
                                 name="status"
                                 defaultValue={row ? row.status : "not_assessed"}

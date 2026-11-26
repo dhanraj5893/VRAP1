@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { listActionsWithVendors, listFindingsWithVendors } from "@/lib/data";
 import { updateActionStatusAction, updateFindingStatusAction } from "@/app/actions";
@@ -14,6 +15,7 @@ export default async function ActionsPage({
   searchParams: Promise<{ filter?: string }>;
 }) {
   const user = await requireUser();
+  if (user.role === "auditor") redirect("/");
   const sp = await searchParams;
   let actionRows = await listActionsWithVendors();
   let findingRows = await listFindingsWithVendors();
